@@ -152,15 +152,15 @@ mv ${ROOTMP}/boot/* ${BOOTMP}
 echo 'Writing the host name...'
 echo "${HOSTNAME_}" > "${ROOTMP}/etc/hostname"
 
-if (( expandscripts )) ; then
-	echo "Installing expand scripts to /usr/lib/raspi-config..."
-	install -d ${ROOTMP}/usr/lib/raspi-config
-	install -m0755 -t ${ROOTMP}/usr/lib/raspi-config files/usr/lib/raspi-config/*.sh
-	install -T files/boot/cmdline.txt.resize ${BOOTMP}/cmdline.txt
-else
-	echo "Not installing expand scripts to /usr/lib/raspi-config"
+#if (( expandscripts )) ; then
+#	echo "Installing expand scripts to /usr/lib/raspi-config..."
+#	install -d ${ROOTMP}/usr/lib/raspi-config
+#	install -m0755 -t ${ROOTMP}/usr/lib/raspi-config files/usr/lib/raspi-config/*.sh
+#	install -T files/boot/cmdline.txt.resize ${BOOTMP}/cmdline.txt
+#else
+#	echo "Not installing expand scripts to /usr/lib/raspi-config"
 	install -T files/boot/cmdline.txt ${BOOTMP}/cmdline.txt
-fi
+#fi
 
 echo "Installing /boot/config.txt..."
 install -T files/boot/config.txt ${BOOTMP}/config.txt
