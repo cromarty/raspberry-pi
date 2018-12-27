@@ -11,6 +11,7 @@ usage() {
 
 cleanup=0
 expandscripts=0
+fstab=0
 dryrun=0
 
 # These can all be overridden by environment variables of the same name,
@@ -24,7 +25,7 @@ dryrun=0
 : ${BLOCKSIZE:=1M}
 : ${SPLIT:=96}
 
-while getopts ':678CH:deoc:hi:s:w:z:' flag ; do
+while getopts ':678CH:defoc:hi:s:w:z:' flag ; do
 	case $flag in
 	h)
 		usage
@@ -41,6 +42,9 @@ while getopts ':678CH:deoc:hi:s:w:z:' flag ; do
 	;;
 	e)
 		expandscripts=1
+	;;
+	f)
+		fstab=1
 	;;
 	6)
 		ARMV=armv6
@@ -113,7 +117,6 @@ if (( dryrun )) ; then
 	exit 0
 fi
 
-
 # mount points of file-systems created in the .img file
 # sub-directories of working dir will be created with these names
 BOOTMP="${WORKDIR}/boot"
@@ -152,18 +155,23 @@ mv ${ROOTMP}/boot/* ${BOOTMP}
 echo 'Writing the host name...'
 echo "${HOSTNAME_}" > "${ROOTMP}/etc/hostname"
 
-#if (( expandscripts )) ; then
-#	echo "Installing expand scripts to /usr/lib/raspi-config..."
-#	install -d ${ROOTMP}/usr/lib/raspi-config
-#	install -m0755 -t ${ROOTMP}/usr/lib/raspi-config files/usr/lib/raspi-config/*.sh
-#	install -T files/boot/cmdline.txt.resize ${BOOTMP}/cmdline.txt
-#else
-#	echo "Not installing expand scripts to /usr/lib/raspi-config"
-	install -T files/boot/cmdline.txt ${BOOTMP}/cmdline.txt
-#fi
+if test -f files/etc/issue ; then
+	install -m0644 -t ${ROOTMP}/etc files/etc/issue
+fi
 
-echo "Installing /boot/config.txt..."
+install -T files/boot/cmdline.txt ${BOOTMP}/cmdline.txt
 install -T files/boot/config.txt ${BOOTMP}/config.txt
+
+if (( fstab )) ; then
+	install -T files/etc/fstab  ${ROOTMP}/etc/fstab
+fi
+
+if (( expandscripts )) ; then
+	install -d ${ROOTMP}/usr/lib/raspi-config
+	install -m0755 -t ${ROOTMP}/usr/lib/raspi-config files/usr/lib/raspi-config/init_resize.sh
+	rpi-image-tool -I ${WORKDIR}
+	rpi-image-tool -F ${WORKDIR}
+fi
 
 
 sync

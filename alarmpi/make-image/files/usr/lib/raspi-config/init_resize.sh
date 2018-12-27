@@ -145,11 +145,14 @@ main () {
     reboot_pi
   fi
 
-touch /root/i2
+  if [ "$NOOBS" = "1" ]; then
+    if ! parted -m "$ROOT_DEV" u s resizepart "$EXT_PART_NUM" yes "$TARGET_END"; then
+      FAIL_REASON="Extended partition resize failed"
+      return 1
+    fi
+  fi
 
-  parted ${ROOT_DEV} unit s resizepart ${ROOT_PART_NUM} Yes ${TARGET_END}
-  if [ $? != "0" ]; then
-touch /root/ifail
+  if ! parted -m "$ROOT_DEV" u s resizepart "$ROOT_PART_NUM" "$TARGET_END"; then
     FAIL_REASON="Root partition resize failed"
     return 1
   fi
@@ -168,13 +171,10 @@ mkdir -p /run/systemd
 mount /boot
 mount / -o remount,rw
 
-touch /root/i1
-
-sed -i 's| init=/usr/lib/raspi-config/init_resize.sh| init=/usr/lib/raspi-config/fix_resize.sh|' /boot/cmdline.txt
-
-#if ! grep -q splash /boot/cmdline.txt; then
-#  sed -i "s/ quiet//g" /boot/cmdline.txt
-#fi
+sed -i 's| init=/usr/lib/raspi-config/init_resize.sh||' /boot/cmdline.txt
+if ! grep -q splash /boot/cmdline.txt; then
+  sed -i "s/ quiet//g" /boot/cmdline.txt
+fi
 sync
 
 echo 1 > /proc/sys/kernel/sysrq
