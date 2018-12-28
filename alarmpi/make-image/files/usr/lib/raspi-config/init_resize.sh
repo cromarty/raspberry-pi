@@ -5,13 +5,7 @@ reboot_pi () {
   umount /boot
   mount / -o remount,ro
   sync
-  if [ "$NOOBS" = "1" ]; then
-    if [ "$NEW_KERNEL" = "1" ]; then
-      reboot -f "$BOOT_PART_NUM"
-    else
-      echo "$BOOT_PART_NUM" > "/sys/module/${BCM_MODULE}/parameters/reboot_part"
-    fi
-  fi
+  
   echo b > /proc/sysrq-trigger
   sleep 5
   exit 0
@@ -35,15 +29,6 @@ check_commands () {
   return 0
 }
 
-check_noobs () {
-  echo "In check_noobs" >> /root/resize.log
-  if [ "$BOOT_PART_NUM" = "1" ]; then
-    NOOBS=0
-  else
-    NOOBS=1
-  fi
-}
-
 get_variables () {
   echo "In get_variables" >> /root/resize.log
   ROOT_PART_DEV=$(findmnt / -o source -n)
@@ -59,10 +44,25 @@ get_variables () {
 
   OLD_DISKID=$(fdisk -l "$ROOT_DEV" | sed -n 's/Disk identifier: 0x\([^ ]*\)/\1/p')
 
-  check_noobs
+  echo "ROOT_PART_DEV:${ROOT_PART_DEV}" >> /root/resize.log
+  echo "ROOT_PART_NAME:${ROOT_PART_NAME}" >> /root/resize.log
+  echo "ROOT_DEV_NAME:${ROOT_DEV_NAME}" >> /root/resize.log
+  echo "ROOT_DEV:${ROOT_DEV}" >> /root/resize.log
+  echo "ROOT_PART_NUM:${ROOT_PART_NUM}" >> /root/resize.log
+
+  echo "BOOT_PART_DEV:${BOOT_PART_DEV}" >> /root/resize.log
+  echo "BOOT_PART_NAME:${BOOT_PART_NAME}" >> /root/resize.log
+  echo "BOOT_DEV_NAME:${BOOT_DEV_NAME}" >> /root/resize.log
+  echo "BOOT_PART_NUM:${BOOT_PART_NUM}" >> /root/resize.log
+
+  echo "OLD_DISKID:${OLD_DISKID}" >> /root/resize.log
 
   ROOT_DEV_SIZE=$(cat "/sys/block/${ROOT_DEV_NAME}/size")
   TARGET_END=$((ROOT_DEV_SIZE - 1))
+
+###
+  echo "ROOT_DEV_SIZE:${ROOT_DEV_SIZE}" >> /root/resize.log
+  echo "TARGET_END:${TARGET_END}" >> /root/resize.log
 
   PARTITION_TABLE=$(parted -m "$ROOT_DEV" unit s print | tr -d 's')
   echo -e "Partition table:\n${PARTITION_TABLE}" >> /root/resize.log
@@ -72,12 +72,9 @@ get_variables () {
   ROOT_PART_START=$(echo "$ROOT_PART_LINE" | cut -d ":" -f 2)
   ROOT_PART_END=$(echo "$ROOT_PART_LINE" | cut -d ":" -f 3)
 
-  if [ "$NOOBS" = "1" ]; then
-    EXT_PART_LINE=$(echo "$PARTITION_TABLE" | grep ":::;" | head -n 1)
-    EXT_PART_NUM=$(echo "$EXT_PART_LINE" | cut -d ":" -f 1)
-    EXT_PART_START=$(echo "$EXT_PART_LINE" | cut -d ":" -f 2)
-    EXT_PART_END=$(echo "$EXT_PART_LINE" | cut -d ":" -f 3)
-  fi
+  echo "ROOT_PART_START:${ROOT_PART_START}" >> /root/resize.log
+  echo "ROOT_PART_END:${ROOT_PART_END}" >> /root/resize.log
+  
 }
 
 fix_partuuid() {
@@ -92,16 +89,7 @@ fix_partuuid() {
 
 check_variables () {
   echo "In check_variables" >> /root/resize.log
-  if [ "$NOOBS" = "1" ]; then
-    if [ "$EXT_PART_NUM" -gt 4 ] || \
-       [ "$EXT_PART_START" -gt "$ROOT_PART_START" ] || \
-       [ "$EXT_PART_END" -lt "$ROOT_PART_END" ]; then
-      FAIL_REASON="Unsupported extended partition"
-            echo "Failed in check_variables: ${FAIL_REASON}" >> /root/resize.log
-      return 1
-    fi
-  fi
-
+  
   if [ "$BOOT_DEV_NAME" != "$ROOT_DEV_NAME" ]; then
       FAIL_REASON="Boot and root partitions are on different devices"
             echo "Failed in check_variables: ${FAIL_REASON}" >> /root/resize.log
@@ -128,19 +116,6 @@ check_variables () {
     echo "Exit from check_variables" >> /root/resize.log
 }
 
-check_kernel () {
-  echo "In check_kernel" >> /root/resize.log
-  local MAJOR=$(uname -r | cut -f1 -d.)
-  local MINOR=$(uname -r | cut -f2 -d.)
-  if [ "$MAJOR" -eq "4" ] && [ "$MINOR" -lt "9" ]; then
-    return 0
-  fi
-  if [ "$MAJOR" -lt "4" ]; then
-    return 0
-  fi
-  NEW_KERNEL=1
-}
-
 main () {
   echo "In main" >> /root/resize.log
   get_variables
@@ -150,42 +125,27 @@ main () {
     return 1
   fi
 
-  check_kernel
 
-  if [ "$NOOBS" = "1" ] && [ "$NEW_KERNEL" != "1" ]; then
-    BCM_MODULE=$(grep -e "^Hardware" /proc/cpuinfo | cut -d ":" -f 2 | tr -d " " | tr '[:upper:]' '[:lower:]')
-    if ! modprobe "$BCM_MODULE"; then
-      FAIL_REASON="Couldn't load BCM module $BCM_MODULE"
-            echo "Failed in main: ${FAIL_REASON}" >> /root/resize.log
-      return 1
-    fi
-  fi
 
   if [ "$ROOT_PART_END" -eq "$TARGET_END" ]; then
       echo "ROOT_PART_END and TARGET_END are equal in main" >> /root/resize.log
     reboot_pi
   fi
 
-  if [ "$NOOBS" = "1" ]; then
-    if ! parted -m "$ROOT_DEV" u s resizepart "$EXT_PART_NUM" yes "$TARGET_END"; then
-      FAIL_REASON="Extended partition resize failed"
-            echo "Failed in main: ${FAIL_REASON}" >> /root/resize.log
-      return 1
-    fi
-  fi
-
-  echo "Before call to parted to resize in main" >> /root/resize.log
-  if ! parted -m "$ROOT_DEV" u s resizepart "$ROOT_PART_NUM" "$TARGET_END"; then
-    FAIL_REASON="Root partition resize failed"
-        echo "Failed in main: ${FAIL_REASON}" >> /root/resize.log
-    return 1
-  fi
-
-
-  echo "Before partprobe in main" >> /root/resize.log
-  partprobe "$ROOT_DEV"
-    echo "Before call to fix_partuuid in main" >> /root/resize.log
-  fix_partuuid
+#  echo "Before call to parted to resize in main" >> /root/resize.log
+#  if ! parted -m "$ROOT_DEV" u s resizepart "$ROOT_PART_NUM" "$TARGET_END"; then
+#    FAIL_REASON="Root partition resize failed"
+#        echo "Failed in main: ${FAIL_REASON}" >> /root/resize.log
+#    return 1
+#  fi
+#
+#
+#  echo "Before partprobe in main" >> /root/resize.log
+#  partprobe "$ROOT_DEV"
+  #
+#    echo "Before call to fix_partuuid in main" >> /root/resize.log
+#  fix_partuuid
+  
   echo "Before exit from main" >> /root/resize.log
   return 0
 }
