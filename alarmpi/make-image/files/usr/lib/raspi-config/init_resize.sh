@@ -162,7 +162,7 @@ main () {
 
   fdisk_resize
 
-  resize2fs "$ROOT_DEV"
+  resize2fs "$ROOT_PART_DEV"
   fix_partuuid
 
   return 0
@@ -177,9 +177,6 @@ mount /boot
 mount / -o remount,rw
 
 sed -i 's| init=/usr/lib/raspi-config/init_resize.sh||' /boot/cmdline.txt
-if ! grep -q splash /boot/cmdline.txt; then
-  sed -i "s/ quiet//g" /boot/cmdline.txt
-fi
 sync
 
 echo 1 > /proc/sys/kernel/sysrq
