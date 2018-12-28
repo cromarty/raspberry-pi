@@ -169,6 +169,7 @@ fi
 if (( expandscripts )) ; then
 	install -d ${ROOTMP}/usr/lib/raspi-config
 	install -m0755 -t ${ROOTMP}/usr/lib/raspi-config files/usr/lib/raspi-config/init_resize.sh
+	install -m0755 -t ${ROOTMP}/usr/lib/raspi-config files/usr/lib/raspi-config/dev_variables.sh
 	rpi-image-tool -I ${WORKDIR}
 	rpi-image-tool -F ${WORKDIR}
 fi
