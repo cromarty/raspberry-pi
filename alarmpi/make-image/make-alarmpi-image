@@ -155,8 +155,15 @@ mv ${ROOTMP}/boot/* ${BOOTMP}
 echo 'Writing the host name...'
 echo "${HOSTNAME_}" > "${ROOTMP}/etc/hostname"
 
-if test -f files/etc/issue ; then
-	install -m0644 -t ${ROOTMP}/etc files/etc/issue
+# install the first boot installs script if it exists
+for SCRIPT in files/root
+do
+	install -m0755 -t ${ROOTMP}/root ${SCRIPT} 
+done
+
+# install the message of the day file if it exists
+if test -f files/etc/motd ; then
+	install -m0644 -t ${ROOTMP}/etc files/etc/motd
 fi
 
 install -T files/boot/cmdline.txt ${BOOTMP}/cmdline.txt
