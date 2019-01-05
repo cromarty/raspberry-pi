@@ -156,7 +156,7 @@ echo 'Writing the host name...'
 echo "${HOSTNAME_}" > "${ROOTMP}/etc/hostname"
 
 # install the first boot installs script if it exists
-for SCRIPT in files/root
+for SCRIPT in files/root/*.sh
 do
 	install -m0755 -t ${ROOTMP}/root ${SCRIPT} 
 done
