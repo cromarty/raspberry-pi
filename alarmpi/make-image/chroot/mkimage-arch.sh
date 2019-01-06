@@ -26,7 +26,7 @@ hash expect &>/dev/null || {
 
 
 export LANG="C.UTF-8"
-TMPDIR=./work
+
 ROOTFS=$(mktemp -d ${TMPDIR:-/var/tmp}/rootfs-archlinux-XXXXXXXXXX)
 
 chmod 755 ${ROOTFS}
@@ -67,7 +67,7 @@ case "$arch" in
 esac
 
 
-echo "Image name is: ${IMAGE_NAME}"
+#echo "Image name is: ${IMAGE_NAME}"
 
 expect <<EOF
  set send_slow {1 .1}
@@ -89,7 +89,6 @@ EOF
 
 # Some of these arch-chroots have a `touch` command at the end. Bizarrely I had to add
 # these to stop the arch-chroot from failing the script. No idea why
-#arch-chroot $ROOTFS /bin/sh -c 'rm -r /usr/share/man/*'
 arch-chroot ${ROOTFS} /bin/sh -c "haveged -w 1024; pacman-key --init; pkill haveged; touch ."
 arch-chroot ${ROOTFS} /bin/sh -c "pacman-key --populate ${ARCH_KEYRING}; pkill gpg-agent; touch ."
 arch-chroot $ROOTFS /bin/sh -c "rm /etc/localtime"
@@ -102,6 +101,7 @@ arch-chroot $ROOTFS /bin/sh -c "ln -s /lib/systemd/systemd /usr/bin/init"
 #DEV=$ROOTFS/dev
 #rm -rf $DEV
 #mkdir -p $DEV
+
 mknod -m 666 $DEV/null c 1 3
 mknod -m 666 $DEV/zero c 1 5
 mknod -m 666 $DEV/random c 1 8
