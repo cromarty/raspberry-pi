@@ -8,5 +8,5 @@
 : ${SPLIT:=64} ; export SPLIT
 : ${HOSTNAME_:=alarmpi} ; export HOSTNAME_
 
-./make-alarmpi-image -e -f -7
+./make-alarmpi-image -e -f -7 $*
 
