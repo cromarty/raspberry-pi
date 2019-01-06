@@ -190,6 +190,7 @@ done
 case ${ARMV} in
 	armv6|armv7|armv8)
 		echo "Creating an ${ARMV} image file"
+		WORKDIR="${WORKDIR}.${ARMV}"
 	;;
 	*)
 		usage
@@ -253,29 +254,37 @@ mv ${ROOTMP}/boot/* ${BOOTMP}
 echo 'Writing the host name...'
 echo "${HOSTNAME_}" > "${ROOTMP}/etc/hostname"
 
-# install the first boot installs script if it exists
+# install scripts
 for SCRIPT in files/root/*.sh
 do
+	echo "Install ${SCRIPT}..."
 	install -m0755 -t ${ROOTMP}/root ${SCRIPT} 
 done
 
 # install the message of the day file if it exists
 if test -f files/etc/motd ; then
+	echo "Installing motd file..."
 	install -m0644 -t ${ROOTMP}/etc files/etc/motd
 fi
 
+echo "Installing cmdline.txt..."
 install -T files/boot/cmdline.txt ${BOOTMP}/cmdline.txt
+echo "Installing config.txt..."
 install -T files/boot/config.txt ${BOOTMP}/config.txt
 
 if (( fstab )) ; then
+	echo "Installing fstab..."
 	install -T files/etc/fstab  ${ROOTMP}/etc/fstab
 fi
 
 if (( expandscripts )) ; then
+	echo "Installing expand script..."
 	install -d ${ROOTMP}/usr/lib/raspi-config
 	install -m0755 -t ${ROOTMP}/usr/lib/raspi-config files/usr/lib/raspi-config/init_resize.sh
 	install -m0755 -t ${ROOTMP}/usr/lib/raspi-config files/usr/lib/raspi-config/dev_variables.sh
+	echo "Calling rpi-image-tool to edit PARTUID entrie in cmdline.txt..."
 	rpi-image-tool -I ${WORKDIR}
+	echo "Calling rpi-image-tool to edit PARTUID entries in /etc/fstab..."
 	rpi-image-tool -F ${WORKDIR}
 fi
 
