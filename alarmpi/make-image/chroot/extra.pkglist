@@ -1,3 +1,5 @@
 archlinuxarm-keyring		
 systemd
 dmidecode
+libnewt
+parted
