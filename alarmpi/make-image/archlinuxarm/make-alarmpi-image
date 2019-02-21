@@ -1,108 +1,10 @@
 #!/bin/bash
-#
-# make-alarmpi-image
-#
-# Copyright 2018, Mike Ray, <mike.ray@btinternet.com>
-#
-# This is free software; you can redistribute it and/or modify it under the
-# terms of the GNU Lesser General Public License as published by the Free
-# Software Foundation; either version 3, or (at your option) any later
-# version.
-#
-# This software is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with this package; see the file COPYING.  If not, write to the Free
-# Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-# 02110-1301, USA.
-#
-#--code--
-
-export TEXTDOMAIN=rpi-image-tool
-export TEXTDOMAINDIR=/usr/local/share/locale
-
-. gettext.sh
 
 . rpi-image-tool.lib
 
 
 usage() {
-	cat <<EOF
-
-
-Usage: make-alarmpi-image [options]
-
-Options:
-
-    -6
-    
-        Create an armv6 image.
-	
-    -7
-    
-        Create an armv7 image
-	
-    -8
-    
-        Create an aarch64 image
-	
-    -C <workdir>
-
-        Clean-up. Give the same <workdir> given in the run to create
-        the image.
-
-    -H <host name>
-
-        Hostname to be written to image if different from default alarmpi.
-	
-    -c <integer>
-
-        Block count. Number of blocks to write to new (initially
-	    empty) image.
-
-    -H
-
-        Show this usage message and exit.
-	
-    -d
-
-        Dry-run. Just show all the settings and exit without creating an image.
-	
-    -e
-
-        Copy expand script to new image.
-	
-    -f
-
-        Copy fstab to new image.
-
-    -i <image name>
-
-        Name of image to be created if desired to be different from default.
-	
-    -s <integer>
-
-        Split count. Number of blocks in first (vfat) partition.
-	
-    -w <work dir>
-
-        The working directory where file-systems will be mounted.
-	
-    -z <block size>
-
-        Block size supplied to 'dd' to make empty image file. Valid
-        values are '1M' or '1MB'.
-
-This script must be run as root, even to get the help message.
-
-For more detailed information about the options, see 'rpi-image-tool'
-help.
-
-EOF
-
+	echo "usage message"
 }
 
 (( EUID == 0 )) || { echo "Script must be run as root" ; exit 1 ; }
@@ -190,7 +92,6 @@ done
 case ${ARMV} in
 	armv6|armv7|armv8)
 		echo "Creating an ${ARMV} image file"
-		WORKDIR="${WORKDIR}.${ARMV}"
 	;;
 	*)
 		usage
@@ -254,37 +155,29 @@ mv ${ROOTMP}/boot/* ${BOOTMP}
 echo 'Writing the host name...'
 echo "${HOSTNAME_}" > "${ROOTMP}/etc/hostname"
 
-# install scripts
+# install the first boot installs script if it exists
 for SCRIPT in files/root/*.sh
 do
-	echo "Install ${SCRIPT}..."
 	install -m0755 -t ${ROOTMP}/root ${SCRIPT} 
 done
 
 # install the message of the day file if it exists
 if test -f files/etc/motd ; then
-	echo "Installing motd file..."
 	install -m0644 -t ${ROOTMP}/etc files/etc/motd
 fi
 
-echo "Installing cmdline.txt..."
 install -T files/boot/cmdline.txt ${BOOTMP}/cmdline.txt
-echo "Installing config.txt..."
 install -T files/boot/config.txt ${BOOTMP}/config.txt
 
 if (( fstab )) ; then
-	echo "Installing fstab..."
 	install -T files/etc/fstab  ${ROOTMP}/etc/fstab
 fi
 
 if (( expandscripts )) ; then
-	echo "Installing expand script..."
 	install -d ${ROOTMP}/usr/lib/raspi-config
 	install -m0755 -t ${ROOTMP}/usr/lib/raspi-config files/usr/lib/raspi-config/init_resize.sh
 	install -m0755 -t ${ROOTMP}/usr/lib/raspi-config files/usr/lib/raspi-config/dev_variables.sh
-	echo "Calling rpi-image-tool to edit PARTUID entrie in cmdline.txt..."
 	rpi-image-tool -I ${WORKDIR}
-	echo "Calling rpi-image-tool to edit PARTUID entries in /etc/fstab..."
 	rpi-image-tool -F ${WORKDIR}
 fi
 

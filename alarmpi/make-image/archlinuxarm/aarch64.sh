@@ -10,4 +10,3 @@
 
 ./make-alarmpi-image -e -f -8
 
-
