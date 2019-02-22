@@ -1,6 +1,31 @@
-#!/usr/bin/env bash
+#!/bin/bash
+
+join() {
+    local IFS="$1"
+    shift
+    echo "$*"
+}
+
 
 set -e
+
+(( EUID == 0 )) || {
+	echo "Must be run as root"
+	exit 1
+}
+
+hash debootstrap &>/dev/null || {
+	echo "Could not find debootstrap. Run sudo apt-get install debootstrap"
+	exit 1
+}
+
+
+PKGEXCLUDE=$(<exclude.pkglist)
+PKGEXCLUDE=$(join , ${PKGEXCLUDE[*]})
+
+PKGINCLUDE=$(<include.pkglist)
+PKGINCLUDE=$(join , ${PKGINCLUDE[*]})
+
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH
 
 dir="raspbian"
@@ -15,7 +40,8 @@ mkdir -p "${rootfsDir}"
 		--arch=armhf \
 		--verbose \
 		--variant='minbase' \
-		--include='iproute,iputils-ping' \
+		--include="${PKGINCLUDE}" \
+	--exclude="${PKGEXCLUDE}" \
 		stretch \
 		"${rootfsDir}" \
 		http://archive.raspbian.org/raspbian/
@@ -34,6 +60,7 @@ cat > "$rootfsDir/usr/sbin/policy-rc.d" <<'EOF'
 
 exit 101
 EOF
+
 chmod +x "$rootfsDir/usr/sbin/policy-rc.d"
 
 # prevent upstart scripts from running during install/update
