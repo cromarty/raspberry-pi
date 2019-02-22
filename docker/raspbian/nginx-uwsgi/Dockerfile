@@ -1,4 +1,4 @@
-FROM raspbian/stretch
+FROM cromarty/base-raspbian-stretch-armv7l
 MAINTAINER Mike Ray <mike.ray@btinternet.com>
 
 # install python3

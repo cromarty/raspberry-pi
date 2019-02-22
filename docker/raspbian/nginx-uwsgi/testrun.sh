@@ -1,6 +1,6 @@
 #!/bin/bash
 
-IMAGE=mike
+IMAGE=cromarty/raspbian-stretch-nginx-uwsgi
 
 docker run -d \
     --name uwsgi \
