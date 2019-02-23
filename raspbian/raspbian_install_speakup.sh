@@ -9,7 +9,7 @@
 
 set -e
 
-(( EUID == 0 )) {
+(( EUID == 0 )) || {
     echo "This script must be run as root. Try 'sudo ./raspbian_install_speakup.sh'"
     exit 1
 }
@@ -20,7 +20,7 @@ apt-get update
 
 echo "Installing necessary packages..."
 apt-get install -y --no-install-recommends --no-install-suggests \
-    build-essential espeak espeak-dev git
+    build-essential espeak libespeak-dev git
 
 echo "Cloning espeakup from git..."
 git clone --depth 1 https://github.com/williamh/espeakup.git
