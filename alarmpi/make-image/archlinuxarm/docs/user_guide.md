@@ -3,7 +3,7 @@
 
 ## Dependencies
 
-You will need 'kapartx' for mounting the file-systems inside files.
+You will need 'kpartx' for mounting the file-systems inside files.
 
 The package for this on Arch Linux is 'multipath-tools' from the Arch
 User Repository (AUR).
@@ -24,6 +24,8 @@ For the above to work you will need to have installed either the
 'base-devel' package on Arch or the 'build-essential' package on
 Debian/Ubuntu/Raspbian or other Debian derivatives.
 
+You also need gettext and intltool installed for `rpi-image-tool`.
+
 There are three scripts which will call the main script to create
 three different flavours of Arch Linux image:
 
@@ -32,9 +34,6 @@ three different flavours of Arch Linux image:
 * aarch64.sh
 
 You will probably want the middle one, unless you have an older Pi.
-
-The 'aarch64' will create a 64-bit Arch image which will *not* have
-any sound or video, and should be regarded as a server image.
 
 Having run any of the above, you should have an image called:
 
